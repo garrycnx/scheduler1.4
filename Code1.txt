@@ -14,145 +14,20 @@ st.set_page_config(layout="wide", page_title="AI Schedule Generator by - Data Qu
 st.markdown(
     """
     <style>
-    .go-back-btn {
-    position: fixed;
-    top: 18px;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 8px 16px;
-    font-size: 14px;
-    font-weight: 700;
-    background: rgba(0, 0, 0, 0.75);
-    border-radius: 20px;
-    letter-spacing: 0.5px;
-    text-decoration: none;
-    box-shadow:
-        0 0 6px #FFFFFF,
-        0 0 12px rgba(0,255,247,0.6);
-    z-index: 10000;
-    transition: all 0.2s ease-in-out;
+    /* Page background - light orange */
+    .stApp {
+        background-color: #FFF3E0;
     }
 
-    /* FORCE WHITE TEXT IN ALL STATES */
-    .go-back-btn,
-    .go-back-btn:link,
-    .go-back-btn:visited,
-    .go-back-btn:hover,
-    .go-back-btn:active {
-        color: #FFFFFF !important;
-    }
-
-    .go-back-btn:hover {
-        background: rgba(0, 0, 0, 0.9);
-        box-shadow:
-            0 0 10px #FFFFFF,
-            0 0 20px rgba(0,255,247,0.9);
-        transform: translateX(-50%) translateY(-1px);
-    }
-
-    </style>
-
-    <a href="https://www.wfmclubs.com/" class="go-back-btn">
-        ← Go back to website
-    </a>
-    """,
-    unsafe_allow_html=True
-)
-
-st.markdown(
-    """
-    <style>
-    .version-badge {
-        position: fixed;
-        top: 18px;
-        right: 25px;
-        padding: 8px 16px;
-        font-size: 14px;
-        font-weight: 700;
-        color: #00fff7;
-        background: rgba(0, 0, 0, 0.75);
-        border-radius: 20px;
-        letter-spacing: 1px;
-        box-shadow: 
-            0 0 6px #00fff7,
-            0 0 12px #00fff7,
-            0 0 20px rgba(0,255,247,0.8);
-        z-index: 10000;
-        animation: glow 1.8s ease-in-out infinite alternate;
-    }
-
-    @keyframes glow {
-        from {
-            box-shadow:
-                0 0 6px #00fff7,
-                0 0 12px #00fff7;
-        }
-        to {
-            box-shadow:
-                0 0 12px #00fff7,
-                0 0 24px #00fff7,
-                0 0 36px rgba(0,255,247,0.9);
-        }
-    }
-    </style>
-
-    <div class="version-badge">
-        Version 1.4
-    </div>
-    
-    
-    
-    """,
-    unsafe_allow_html=True
-)
-
-st.markdown(
-    """
-    <style>
-    /* Sidebar background */
+    /* Sidebar (optional) */
     [data-testid="stSidebar"] {
-        background-color: #F2F2F2;
+        background-color: #FFE0B2;
     }
-
-    /* All sidebar labels default to WHITE */
-    [data-testid="stSidebar"] label {
-        color:  #000000 !important;
-        font-weight: 600;
-    }
-
-    /* Radio option text (Consecutive Off Days, Split Off Days) */
-    [data-testid="stSidebar"] .stRadio label span {
-        color: #000000 !important;
-    }
-
-    /* Time input LABELS → WHITE */
-    [data-testid="stSidebar"] .stTimeInput label {
-        color: #000000 !important;
-    }
-
-    /* Time input VALUE (inside box) → BLACK */
-    [data-testid="stSidebar"] .stTimeInput input {
-        color: #000000 !important;
-        background-color: #FFFFFF !important;
-        font-weight: 600;
-    }
-
-    /* Number input boxes */
-    [data-testid="stSidebar"] input[type="number"] {
-        color: #000000 !important;
-        background-color: #FFFFFF !important;
-        font-weight: 600;
-    }
-
-    /* File uploader text */
-    [data-testid="stSidebar"] [data-testid="stFileUploader"] {
-        color: #000000 !important;
-    }
-
     </style>
     """,
     unsafe_allow_html=True
 )
+
 
 
 
@@ -278,24 +153,10 @@ def required_servers_for_SLA_and_abandon(arrivals_per_interval, aht_minutes, sla
         # compute abandon using erlang-a approx
         _, _, p_abandon_any, _ = erlang_a_estimates(a, c, mu, theta, t)
         abandon_ok = p_abandon_any <= abandon_fraction
-        best_c = None
-        best_gap = float("inf")
-
-        for c in range(start, 500):
-            if c <= a:
-                continue
-
-            _, _, p_abandon_any, sla_est = erlang_a_estimates(a, c, mu, theta, t)
-
-            abandon_ok = p_abandon_any <= abandon_fraction
-            sla_gap = abs(sla_est - sla_fraction)
-
-            if abandon_ok and sla_gap < best_gap:
-                best_gap = sla_gap
-                best_c = c
-
-            return best_c if best_c else math.ceil(a)
-
+        if sla_ok and abandon_ok:
+            return c
+    # fallback
+    return math.ceil(a) + 1
 
 # ---------------------------
 # Helpers
@@ -308,18 +169,12 @@ def generate_off_pairs(policy):
             ("Sun","Mon"), ("Mon","Tue"), ("Tue","Wed"),
             ("Wed","Thu"), ("Thu","Fri"), ("Fri","Sat"), ("Sat","Sun"),
         ]
-
-    elif policy == "Split Off Days":
+    else:
         return [
             ("Mon","Thu"), ("Tue","Fri"), ("Wed","Sat"),
             ("Thu","Sun"), ("Fri","Mon"), ("Sat","Tue"), ("Sun","Wed"),
         ]
 
-    elif policy == "Single Day Off":
-        return [
-            ("Mon",), ("Tue",), ("Wed",),
-            ("Thu",), ("Fri",), ("Sat",), ("Sun",)
-        ]
 
 def parse_weekday(s):
     try:
@@ -475,8 +330,7 @@ with st.sidebar:
         "Weekly Off Pattern",
         options=[
         "Consecutive Off Days",
-        "Split Off Days",
-        "Single Day Off"
+        "Split Off Days"
         ],
         help="Choose whether weekly offs should be consecutive or separated"
     )
@@ -502,8 +356,8 @@ with st.sidebar:
     
     
     
-    earliest = st.time_input("Earliest shift start", value=time(0,00))
-    latest = st.time_input("Latest shift start", value=time(23,0))
+    earliest = st.time_input("Earliest shift start", value=time(5,30))
+    latest = st.time_input("Latest shift start", value=time(18,0))
     max_agents = st.number_input("Max agents cap", min_value=10, max_value=5000, value=800)
     
     
@@ -729,22 +583,13 @@ if run:
 
     # Build roster table showing SHIFT or OFF explicitly
     roster=[]
-    def shift_str(s,e): 
-        return f"{min_to_time(s)}–{min_to_time(e)}"
-
+    def shift_str(s,e): return f"{min_to_time(s)}–{min_to_time(e)}"
     for ag in agents:
         m = off_mask(ag["off"])
-        row = {
-            "Agent": ag["id"],
-            "Shift Start": min_to_time(ag["start"]),
-            "Shift End": min_to_time(ag["end"]),
-            "Off Days": ",".join(ag["off"])   # ✅ FIX
-        }
-        for i, wd in enumerate(WEEKDAYS):
+        row = {"Agent":ag["id"], "Shift Start":min_to_time(ag["start"]), "Shift End":min_to_time(ag["end"]), "Off Days":f"{ag['off'][0]},{ag['off'][1]}"}
+        for i,wd in enumerate(WEEKDAYS):
             row[wd] = "OFF" if m[i]==0 else shift_str(ag["start"], ag["end"])
         roster.append(row)
-        
-        
     df_roster = pd.DataFrame(roster)
     st.subheader("Roster (shift shown; OFF for off-days)")
     st.dataframe(df_roster.head(200))
@@ -822,7 +667,7 @@ if run:
             "Agent": ag["id"],
             "Shift Start": min_to_time(s),
             "Shift End": min_to_time(e),
-            "Off Days": ",".join(ag["off"])
+            "Off Days": f"{ag['off'][0]},{ag['off'][1]}"
         }
 
         m = off_mask(ag["off"])
@@ -1023,13 +868,7 @@ if run:
             proj_rows.append({"Day":wd, "Total Calls":0, "Projected SLA %":100.0, "Projected Abandon %":0.0, "Avg Occupancy %":0.0})
 
     df_proj = pd.DataFrame(proj_rows)
-    st.dataframe(
-    df_proj.style.format({
-        "Projected SLA %": "{:.2f}%",
-        "Projected Abandon %": "{:.2f}%",
-        "Avg Occupancy %": "{:.2f}%"
-    })
-    )
+    st.dataframe(df_proj)
 
     # ---------------------------
     # Export (use openpyxl engine)
