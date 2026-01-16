@@ -413,7 +413,7 @@ def plot_staffing_lines(required_df, actual_df=None):
 # ---------------------------
 # UI
 # ---------------------------
-st.title("AI Schedules Generator by Data Quest")
+st.title("AI Schedules Generator by WFM Club")
 st.markdown("<p style='font-size:12px; color:Blue;'>Tool developed by <b>Gurpreet Singh</b></p>", unsafe_allow_html=True)
 with st.sidebar:
     st.header("Settings")
