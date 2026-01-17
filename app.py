@@ -943,7 +943,7 @@ if run:
             # FINAL ASSIGNMENT
             # ---------------------------
             row[f"{wd}_Break_1"] = f"{min_to_time(best_b1 % 1440)}-{min_to_time((best_b1 + 15) % 1440)}"
-            row[f"{wd}_Lunch"] = f"{min_to_time(best_lunch % 1440)}-{min_to_time((best_lunch + 60) % 1440)}"
+            row[f"{wd}_Lunch"] = f"{min_to_time(best_lunch % 1440)}-{min_to_time((best_lunch + LUNCH_MIN) % 1440)}"
             if best_b2:
                 d2, _ = resolve_day_and_label(wd, best_b2)
                 row[f"{d2}_Break_2"] = (
@@ -960,8 +960,9 @@ if run:
 
             break_load[d1][lbl1] = break_load[d1].get(lbl1, 0) + TEA_IMPACT
             break_load[dl][lbll] = break_load[dl].get(lbll, 0) + 1.0
-            lunch_lbl_2 = min_to_time((best_lunch + 30) % 1440)
-            break_load[dl][lunch_lbl_2] = break_load[dl].get(lunch_lbl_2, 0) + 1.0
+            for offset in range(0, LUNCH_MIN, 30):
+                lbl = min_to_time((best_lunch + offset) % 1440)
+                break_load[dl][lbl] = break_load[dl].get(lbl, 0) + 1.0
 
 
             if best_b2:
