@@ -162,6 +162,17 @@ st.markdown(
     /* Hide Streamlit header */
     header {visibility: hidden;}
 
+    /* Hide Streamlit footer & branding */
+    footer {visibility: hidden;}
+    .viewerBadge_container__1QSob {
+        display: none !important;
+    }
+
+    /* Remove extra bottom spacing */
+    .main > div {
+        padding-bottom: 0rem;
+    }
+
     /* Remove top padding */
     .block-container {
         padding-top: 1rem;
