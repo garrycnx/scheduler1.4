@@ -211,16 +211,25 @@ import matplotlib.pyplot as plt
 # Erlang helpers
 # ---------------------------
 def erlang_c_Pw(a, c):
+    # SAFETY CHECKS
+    if a <= 0 or c <= 0:
+        return 0.0
+
     if c <= a:
         return 1.0
 
-    # Use log-space to avoid overflow
     log_sum = 0.0
     for k in range(c):
-        log_sum += math.exp(k * math.log(a) - math.lgamma(k + 1))
+        try:
+            log_sum += math.exp(k * math.log(a) - math.lgamma(k + 1))
+        except (OverflowError, ValueError):
+            continue
 
-    log_ac = c * math.log(a) - math.lgamma(c + 1)
-    ac = math.exp(log_ac)
+    try:
+        log_ac = c * math.log(a) - math.lgamma(c + 1)
+        ac = math.exp(log_ac)
+    except (OverflowError, ValueError):
+        return 1.0
 
     return (ac * (c / (c - a))) / (log_sum + ac * (c / (c - a)))
 
@@ -232,20 +241,28 @@ def erlang_c_wait_prob_gt_t(a, c, mu, t):
     return pw * math.exp(exponent)
 
 def erlang_a_estimates(a, c, mu, theta, t_sla_min):
-    """
-    Engineering approximation to get:
-      - pw (delay prob), p_wait_gt_t, p_abandon_any, sla_est
-    """
+
+    # 🚨 SAFETY GUARD
+    if a <= 0 or c <= 0 or mu <= 0:
+        return 0.0, 1.0, 1.0, 0.0
+
     if c <= a:
         return 1.0, 1.0, 1.0, 0.0
-    pw = erlang_c_Pw(a, c)
-    expected_wait = 1.0 / ((c - a) * mu) if (c - a) * mu > 0 else 1e6
-    p_abandon_any = pw * (1 - math.exp(-theta * expected_wait))
-    p_wait_gt_t = pw * math.exp(- (c - a) * mu * t_sla_min)
-    p_abandon_before_t = pw * (1 - math.exp(-theta * min(expected_wait, t_sla_min)))
-    sla_est = max(0.0, 1.0 - p_wait_gt_t - p_abandon_before_t)
-    return pw, p_wait_gt_t, p_abandon_any, sla_est
 
+    pw = erlang_c_Pw(a, c)
+
+    expected_wait = 1.0 / ((c - a) * mu) if (c - a) * mu > 0 else 1e6
+
+    p_abandon_any = pw * (1 - math.exp(-theta * expected_wait))
+    p_wait_gt_t = pw * math.exp(-(c - a) * mu * t_sla_min)
+
+    p_abandon_before_t = pw * (
+        1 - math.exp(-theta * min(expected_wait, t_sla_min))
+    )
+
+    sla_est = max(0.0, 1.0 - p_wait_gt_t - p_abandon_before_t)
+
+    return pw, p_wait_gt_t, p_abandon_any, sla_est
 # ---------------------------
 # Required servers (modify to include abandon constraint)
 # ---------------------------
@@ -262,7 +279,13 @@ def required_servers_for_SLA_and_abandon(
 
     lam = arrivals_per_interval / 30.0
     mu = 1.0 / aht_minutes
+    if mu <= 0:
+        return 0
+
     a = lam / mu
+
+    if a <= 0:
+        return 0
 
     t = sla_seconds / 60.0
     theta = 1.0 / (patience_seconds / 60.0)
@@ -276,9 +299,12 @@ def required_servers_for_SLA_and_abandon(
 
     for c in range(start, 250):
 
-        pw, p_wait_gt_t, p_abandon, sla_est = erlang_a_estimates(
-            a, c, mu, theta, t
-        )
+        try:
+            pw, p_wait_gt_t, p_abandon, sla_est = erlang_a_estimates(
+                a, c, mu, theta, t
+            )
+        except:
+            continue
 
         # HARD abandon constraint
         if p_abandon > abandon_fraction:
