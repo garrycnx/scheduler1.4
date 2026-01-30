@@ -158,18 +158,24 @@ st.markdown(
 
 st.markdown("""
     <style>
-    /* Hide Streamlit top-right menu */
-    #MainMenu {visibility: hidden;}
+    /* Hide Streamlit Cloud header */
+    header[data-testid="stHeader"] {
+        display: none !important;
+    }
 
-    /* Hide Streamlit footer */
-    footer {visibility: hidden;}
+    /* Hide toolbar */
+    div[data-testid="stToolbar"] {
+        display: none !important;
+    }
 
-    /* Hide Streamlit header (top bar) */
-    header {visibility: hidden;}
+    /* Hide cloud status bar */
+    div[data-testid="stDecoration"] {
+        display: none !important;
+    }
 
-    /* Remove blank space left by header */
+    /* Remove spacing */
     .block-container {
-        padding-top: 1rem;
+        padding-top: 1rem !important;
     }
 
     /* Light mode */
