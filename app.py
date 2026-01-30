@@ -161,6 +161,7 @@ st.markdown(
     <style>
     /* Hide Streamlit header */
     header {visibility: hidden;}
+    footer {visibility: hidden;}
 
     /* Remove top padding */
     .block-container {
