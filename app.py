@@ -156,14 +156,18 @@ st.markdown(
 
 
 
-st.markdown(
-    """
+st.markdown("""
     <style>
-    /* Hide Streamlit header */
-    header {visibility: hidden;}
+    /* Hide Streamlit top-right menu */
+    #MainMenu {visibility: hidden;}
+
+    /* Hide Streamlit footer */
     footer {visibility: hidden;}
 
-    /* Remove top padding */
+    /* Hide Streamlit header (top bar) */
+    header {visibility: hidden;}
+
+    /* Remove blank space left by header */
     .block-container {
         padding-top: 1rem;
     }
